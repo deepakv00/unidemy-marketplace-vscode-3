@@ -16,6 +16,7 @@ import { createClient } from "@/lib/supabase-client"
 import { getWishlistCount } from "@/lib/api/wishlist"
 import { getUnreadMessageCount } from "@/lib/api/messages"
 import { notificationManager } from "@/lib/notification-manager"
+import { LocationSelectorCompact } from "@/components/location-selector"
 import { ThemeToggle } from "@/theme-toggle"
 
 const categories = [
@@ -209,6 +210,7 @@ export default function Header() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-4">
+            <LocationSelectorCompact />
             <ThemeToggle />
 
             {user ? (

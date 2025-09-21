@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/toaster"
 import Header from "@/header"
 import Footer from "@/footer"
 import { AuthProvider } from "@/lib/auth-context"   // ⬅️ Import AuthProvider
+import { LocationProvider } from "@/lib/location-context"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -34,12 +35,14 @@ export default function RootLayout({
         >
           <AppProvider>
             <AuthProvider> {/* ✅ Wrap App with AuthProvider */}
-              <div className="min-h-screen flex flex-col">
-                <Header />
-                <main className="flex-1">{children}</main>
-                <Footer />
-              </div>
-              <Toaster />
+              <LocationProvider>
+                <div className="min-h-screen flex flex-col">
+                  <Header />
+                  <main className="flex-1">{children}</main>
+                  <Footer />
+                </div>
+                <Toaster />
+              </LocationProvider>
             </AuthProvider>
           </AppProvider>
         </ThemeProvider>

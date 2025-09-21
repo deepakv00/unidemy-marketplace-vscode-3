@@ -98,6 +98,8 @@ CREATE INDEX idx_products_category ON public.products(category);
 CREATE INDEX idx_products_seller_id ON public.products(seller_id);
 CREATE INDEX idx_products_status ON public.products(status);
 CREATE INDEX idx_products_created_at ON public.products(created_at DESC);
+CREATE INDEX idx_products_location ON public.products(location);
+CREATE INDEX idx_users_location ON public.users(location);
 CREATE INDEX idx_products_price ON public.products(price);
 
 CREATE INDEX idx_messages_conversation_id ON public.messages(conversation_id);

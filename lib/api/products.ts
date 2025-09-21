@@ -7,28 +7,60 @@ type ProductUpdate = Database["public"]["Tables"]["products"]["Update"]
 
 const supabase = createClient()
 
-export async function getAllProducts(): Promise<Product[]> {
-  const { data, error } = await supabase
-    .from("products")
-    .select(`
-      *,
-      users!products_seller_id_fkey (
-        id,
-        name,
-        rating,
-        verified,
-        avatar
-      )
-    `)
-    .eq("status", "active")
-    .order("created_at", { ascending: false })
+export async function getAllProducts(userLocation?: string): Promise<Product[]> {
+  try {
+    console.log("[API] getAllProducts called with location:", userLocation)
+    
+    let query = supabase
+      .from("products")
+      .select(`
+        *,
+        users!products_seller_id_fkey (
+          id,
+          name,
+          rating,
+          verified,
+          avatar
+        )
+      `)
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
 
-  if (error) {
-    console.error("Error fetching products:", error)
+    // If user location is provided, prioritize products from that location
+    if (userLocation) {
+      query = query.or(`location.ilike.%${userLocation}%,location.is.null`)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error("Error fetching products:", error)
+      return []
+    }
+
+    console.log("[API] Query result:", data)
+    console.log("[API] Result is array:", Array.isArray(data))
+    console.log("[API] Result length:", data?.length || 0)
+
+    // Sort results to prioritize local products first
+    if (userLocation && data) {
+      data.sort((a, b) => {
+        const aIsLocal = a.location.toLowerCase().includes(userLocation.toLowerCase())
+        const bIsLocal = b.location.toLowerCase().includes(userLocation.toLowerCase())
+        
+        if (aIsLocal && !bIsLocal) return -1
+        if (!aIsLocal && bIsLocal) return 1
+        return 0
+      })
+    }
+
+    const result = data || []
+    console.log("[API] Returning:", result)
+    return result
+  } catch (error) {
+    console.error("[API] Exception in getAllProducts:", error)
     return []
   }
-
-  return data || []
 }
 
 export async function getProductById(id: number): Promise<Product | null> {
@@ -81,8 +113,8 @@ export async function getProductsByCategory(category: string): Promise<Product[]
   return data || []
 }
 
-export async function searchProducts(query: string): Promise<Product[]> {
-  const { data, error } = await supabase
+export async function searchProducts(query: string, userLocation?: string): Promise<Product[]> {
+  let searchQuery = supabase
     .from("products")
     .select(`
       *,
@@ -98,8 +130,79 @@ export async function searchProducts(query: string): Promise<Product[]> {
     .eq("status", "active")
     .order("created_at", { ascending: false })
 
+  const { data, error } = await searchQuery
+
   if (error) {
     console.error("Error searching products:", error)
+    return []
+  }
+
+  // Sort results to prioritize local products first
+  if (userLocation && data) {
+    data.sort((a, b) => {
+      const aIsLocal = a.location.toLowerCase().includes(userLocation.toLowerCase())
+      const bIsLocal = b.location.toLowerCase().includes(userLocation.toLowerCase())
+      
+      if (aIsLocal && !bIsLocal) return -1
+      if (!aIsLocal && bIsLocal) return 1
+      return 0
+    })
+  }
+
+  return data || []
+}
+
+// Get products by location
+export async function getProductsByLocation(location: string): Promise<Product[]> {
+  const { data, error } = await supabase
+    .from("products")
+    .select(`
+      *,
+      users!products_seller_id_fkey (
+        id,
+        name,
+        rating,
+        verified,
+        avatar
+      )
+    `)
+    .eq("status", "active")
+    .ilike("location", `%${location}%`)
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("Error fetching products by location:", error)
+    return []
+  }
+
+  return data || []
+}
+
+// Get nearby products (within a certain radius)
+export async function getNearbyProducts(
+  userLocation: string, 
+  radiusKm: number = 50
+): Promise<Product[]> {
+  // For now, we'll use a simple text-based approach
+  // In a production app, you'd use PostGIS for proper geographic queries
+  const { data, error } = await supabase
+    .from("products")
+    .select(`
+      *,
+      users!products_seller_id_fkey (
+        id,
+        name,
+        rating,
+        verified,
+        avatar
+      )
+    `)
+    .eq("status", "active")
+    .ilike("location", `%${userLocation}%`)
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("Error fetching nearby products:", error)
     return []
   }
 
@@ -242,8 +345,8 @@ export async function updateProductById(id: number, updates: Partial<ProductUpda
   return data
 }
 
-export async function getFeaturedProducts(limit = 8): Promise<Product[]> {
-  const { data, error } = await supabase
+export async function getFeaturedProducts(limit = 8, userLocation?: string): Promise<Product[]> {
+  let query = supabase
     .from("products")
     .select(`
       *,
@@ -257,14 +360,33 @@ export async function getFeaturedProducts(limit = 8): Promise<Product[]> {
     `)
     .eq("status", "active")
     .order("created_at", { ascending: false })
-    .limit(limit)
+    .limit(limit * 2) // Get more results to filter and sort
+
+  const { data, error } = await query
 
   if (error) {
     console.error("Error fetching featured products:", error)
     return []
   }
 
-  return data || []
+  if (!data) return []
+
+  // If user location is provided, prioritize local products
+  if (userLocation && data.length > 0) {
+    data.sort((a, b) => {
+      const aIsLocal = a.location.toLowerCase().includes(userLocation.toLowerCase())
+      const bIsLocal = b.location.toLowerCase().includes(userLocation.toLowerCase())
+      
+      if (aIsLocal && !bIsLocal) return -1
+      if (!aIsLocal && bIsLocal) return 1
+      
+      // If both are local or both are not local, sort by creation date
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
+  }
+
+  // Return limited results
+  return data.slice(0, limit)
 }
 
 export async function getDonateGiveawayProducts(): Promise<Product[]> {

@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge"
 import { getAllProducts, searchProducts } from "@/lib/api/products"
 import { getCategories } from "@/lib/api/categories"
 import { createClient } from "@/lib/supabase-client"
+import { useLocation } from "@/lib/location-context"
+import { LocationSelectorCompact } from "@/components/location-selector"
 import type { Database } from "@/lib/supabase"
 import ProductCard from "@/product-card"
 
@@ -28,11 +30,13 @@ type Product = Database['public']['Tables']['products']['Row'] & {
 const SearchPage = () => {
   const searchParams = useSearchParams()
   const initialQuery = searchParams.get("q") || ""
+  const { userLocation } = useLocation()
   
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState(initialQuery)
+  const [searchLocation, setSearchLocation] = useState<string>("")
   const [sortBy, setSortBy] = useState("newest")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [categoryFilter, setCategoryFilter] = useState("all")
@@ -43,8 +47,11 @@ const SearchPage = () => {
     async function loadData() {
       try {
         setLoading(true)
+        // Use searchLocation if specified, otherwise use userLocation
+        const locationToUse = searchLocation || userLocation?.city
+        
         const [productsData, categoriesData] = await Promise.all([
-          searchQuery.trim() ? searchProducts(searchQuery) : getAllProducts(),
+          searchQuery.trim() ? searchProducts(searchQuery, locationToUse) : getAllProducts(locationToUse),
           getCategories()
         ])
         setProducts(productsData)
@@ -57,7 +64,7 @@ const SearchPage = () => {
     }
     
     loadData()
-  }, [searchQuery])
+  }, [searchQuery, searchLocation, userLocation?.city])
 
   // Search and filter products
   const filteredProducts = useMemo(() => {
@@ -116,7 +123,9 @@ const SearchPage = () => {
     e.preventDefault()
     try {
       setLoading(true)
-      const results = searchQuery.trim() ? await searchProducts(searchQuery) : await getAllProducts()
+      // Use searchLocation if specified, otherwise use userLocation
+      const locationToUse = searchLocation || userLocation?.city
+      const results = searchQuery.trim() ? await searchProducts(searchQuery, locationToUse) : await getAllProducts(locationToUse)
       setProducts(results)
     } catch (error) {
       console.error('Error searching products:', error)
@@ -131,21 +140,35 @@ const SearchPage = () => {
         {/* Search Header */}
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold mb-6 text-gray-900 dark:text-white">
-            {searchQuery ? `Search Results for "${searchQuery}"` : "Search Products"}
+            {searchQuery 
+              ? `Search Results for "${searchQuery}"${searchLocation ? ` in ${searchLocation}` : userLocation?.city ? ` in ${userLocation.city}` : ''}` 
+              : "Search Products"
+            }
           </h1>
 
-          {/* Search Form */}
+          {/* Search Form with Location */}
           <form onSubmit={handleSearch} className="mb-6">
-            <div className="relative max-w-2xl">
-              <Input
-                type="text"
-                placeholder="Search for products, brands and more..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-4 pr-12 h-12 text-lg"
-              />
-              <Button type="submit" size="sm" className="absolute right-2 top-2 h-8 px-3">
-                <Search className="h-4 w-4" />
+            <div className="flex flex-col md:flex-row gap-4 max-w-4xl">
+              {/* Search Input */}
+              <div className="relative flex-1">
+                <Input
+                  type="text"
+                  placeholder="Search for products, brands and more..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-4 pr-12 h-12 text-lg"
+                />
+                <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              </div>
+              
+              {/* Location Selector */}
+              <div className="md:w-64">
+                <LocationSelectorCompact onLocationSelect={setSearchLocation} />
+              </div>
+              
+              {/* Search Button */}
+              <Button type="submit" className="h-12 px-8 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                Search
               </Button>
             </div>
           </form>

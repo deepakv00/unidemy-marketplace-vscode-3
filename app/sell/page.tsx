@@ -16,12 +16,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast"
 import { createClient } from "@/lib/supabase-client"
 import { createProduct } from "@/lib/api/products"
+import { useLocation } from "@/lib/location-context"
+import { LocationSelector } from "@/components/location-selector"
 import Link from "next/link"
 
 export default function SellPage() {
   const supabase = createClient()
   const { toast } = useToast()
   const router = useRouter()
+  const { userLocation } = useLocation()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
@@ -38,6 +41,13 @@ export default function SellPage() {
     images: [] as File[],
     imageUrls: [] as string[],
   })
+
+  // Set default location when user location is available
+  useEffect(() => {
+    if (userLocation?.city && !formData.location) {
+      setFormData(prev => ({ ...prev, location: userLocation.city }))
+    }
+  }, [userLocation?.city, formData.location])
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadingImages, setUploadingImages] = useState(false)
@@ -343,12 +353,20 @@ export default function SellPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="location">Location</Label>
+                    <Label htmlFor="location">Location *</Label>
+                    <div className="mt-2">
+                      <LocationSelector 
+                        onLocationSelect={(location) => handleInputChange("location", location)}
+                        showCurrentLocation={true}
+                        className="w-full"
+                      />
+                    </div>
                     <Input
                       id="location"
                       value={formData.location}
                       onChange={(e) => handleInputChange("location", e.target.value)}
-                      placeholder="City, State"
+                      placeholder="Enter your city name"
+                      className="mt-2"
                     />
                   </div>
 

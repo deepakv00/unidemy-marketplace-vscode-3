@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { getAllProducts } from "@/products"
+import { getAllProducts } from "@/lib/api/products"
 
 import { createContext, useContext, useReducer, useEffect, type ReactNode } from "react"
 
@@ -141,13 +141,26 @@ function appReducer(state: AppState, action: AppAction): AppState {
         products: [...(state.products || []), action.payload],
       }
     case "SET_PRODUCTS":
-      console.log("[v0] Setting all products:", action.payload.length)
-      action.payload.forEach((product) => {
-        console.log("[v0] Product:", product.title, "Category:", product.category)
-      })
-      return {
-        ...state,
-        products: action.payload,
+      console.log("[v0] SET_PRODUCTS action received")
+      console.log("[v0] Payload type:", typeof action.payload)
+      console.log("[v0] Payload is array:", Array.isArray(action.payload))
+      console.log("[v0] Payload:", action.payload)
+      
+      if (Array.isArray(action.payload)) {
+        console.log("[v0] Setting all products:", action.payload.length)
+        action.payload.forEach((product) => {
+          console.log("[v0] Product:", product.title, "Category:", product.category)
+        })
+        return {
+          ...state,
+          products: action.payload,
+        }
+      } else {
+        console.error("[v0] SET_PRODUCTS payload is not an array:", action.payload)
+        return {
+          ...state,
+          products: [],
+        }
       }
     case "UPDATE_PRODUCT":
       console.log("[v0] Updating product:", action.payload.title)
@@ -177,11 +190,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState)
 
   useEffect(() => {
-    console.log("[v0] Loading products from products.ts")
-    const allProducts = getAllProducts()
-    console.log("[v0] Found products:", allProducts.length)
+    async function loadProducts() {
+      try {
+        console.log("[v0] Loading products from API")
+        const allProducts = await getAllProducts()
+        console.log("[v0] API returned:", allProducts)
+        console.log("[v0] API result type:", typeof allProducts)
+        console.log("[v0] API result is array:", Array.isArray(allProducts))
+        console.log("[v0] Found products:", allProducts?.length || 0)
 
-    dispatch({ type: "SET_PRODUCTS", payload: allProducts })
+        dispatch({ type: "SET_PRODUCTS", payload: allProducts })
+      } catch (error) {
+        console.error("[v0] Error loading products:", error)
+        dispatch({ type: "SET_PRODUCTS", payload: [] })
+      }
+    }
+    
+    loadProducts()
 
     const savedState = localStorage.getItem("unidemy-state")
     if (savedState) {

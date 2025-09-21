@@ -6,6 +6,7 @@ import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import ProductCard from "@/product-card"
 import { getFeaturedProducts } from "@/lib/api/products"
+import { useLocation } from "@/lib/location-context"
 import type { Database } from "@/lib/supabase"
 
 type Product = Database['public']['Tables']['products']['Row'] & {
@@ -22,11 +23,12 @@ export default function FeaturedListings() {
   const [featuredListings, setFeaturedListings] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const { userLocation } = useLocation()
 
   useEffect(() => {
     async function loadFeaturedProducts() {
       try {
-        const products = await getFeaturedProducts(6)
+        const products = await getFeaturedProducts(6, userLocation?.city)
         setFeaturedListings(products)
       } catch (error) {
         console.error('Error loading featured products:', error)
@@ -36,7 +38,7 @@ export default function FeaturedListings() {
     }
     
     loadFeaturedProducts()
-  }, [])
+  }, [userLocation?.city])
 
   const handleViewAllClick = useCallback(() => {
     // Preserve scroll position
@@ -56,7 +58,10 @@ export default function FeaturedListings() {
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-white">Featured Listings</h2>
           <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Discover the best deals from trusted sellers in your area
+            {userLocation?.city 
+              ? `Discover the best deals from trusted sellers in ${userLocation.city}`
+              : 'Discover the best deals from trusted sellers worldwide'
+            }
           </p>
         </div>
 

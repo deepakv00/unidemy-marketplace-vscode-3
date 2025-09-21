@@ -1,6 +1,6 @@
 import Hero from "@/hero"
 import FeaturedCategories from "@/featured-categories"
-import FeaturedListings from "@/featured-listings"
+import { LocationBasedHomepage } from "@/components/location-based-homepage"
 import RecentlyDonatedSection from "@/recently-donated-section"
 import MovingOutDealsSection from "@/moving-out-deals-section"
 import ScrollManager from "@/scroll-manager"
@@ -11,7 +11,9 @@ export default function HomePage() {
       <ScrollManager />
       <Hero />
       <FeaturedCategories />
-      <FeaturedListings />
+      <div className="container mx-auto px-4 py-8">
+        <LocationBasedHomepage />
+      </div>
       <RecentlyDonatedSection />
       <MovingOutDealsSection />
     </>
