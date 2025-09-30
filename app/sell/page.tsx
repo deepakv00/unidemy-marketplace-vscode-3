@@ -37,7 +37,7 @@ export default function SellPage() {
     condition: "",
     location: "",
     quantity: "1", // Default quantity is 1
-    status: "in_stock", // Changed default status from 'active' to 'in_stock'
+    status: "draft", // default requires user to choose explicitly
     images: [] as File[],
     imageUrls: [] as string[],
   })
@@ -45,6 +45,7 @@ export default function SellPage() {
   // Set default location when user location is available
   useEffect(() => {
     if (userLocation?.city && !formData.location) {
+      // Normalize Bangalore -> Bengaluru via selector upstream
       setFormData(prev => ({ ...prev, location: userLocation.city }))
     }
   }, [userLocation?.city, formData.location])
@@ -130,10 +131,10 @@ export default function SellPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.title || !formData.description || !formData.category || !formData.condition || !formData.quantity) {
+    if (!formData.title || !formData.description || !formData.category || !formData.condition || !formData.quantity || !formData.location || !formData.status) {
       toast({
         title: "Missing information",
-        description: "Please fill in all required fields.",
+        description: "Please fill in all required fields (title, description, category, condition, quantity, location, status).",
         variant: "destructive",
       })
       return
@@ -359,6 +360,7 @@ export default function SellPage() {
                         onLocationSelect={(location) => handleInputChange("location", location)}
                         showCurrentLocation={true}
                         className="w-full"
+                        scope="local"
                       />
                     </div>
                     <Input

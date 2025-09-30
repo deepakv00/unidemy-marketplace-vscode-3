@@ -3,10 +3,11 @@
 import type React from "react"
 import { useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Search, MapPin } from "lucide-react"
+import { Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { LocationSelectorCompact } from "@/components/location-selector"
 
 export default function Hero() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -55,7 +56,7 @@ export default function Hero() {
   )
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-purple-900/20">
+    <section className="relative bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-purple-900/20">
       {/* Background Elements */}
       <div className="absolute inset-0">
         <div className="absolute top-10 left-10 w-72 h-72 bg-blue-300/20 rounded-full blur-3xl animate-pulse"></div>
@@ -101,21 +102,11 @@ export default function Hero() {
                 />
               </div>
 
-              {/* Location Select */}
-              <div className="md:col-span-4 relative">
-                <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 z-10" />
-                <Select value={location} onValueChange={setLocation}>
-                  <SelectTrigger className="pl-12 h-14 text-lg rounded-xl border-2 focus-no-scroll">
-                    <SelectValue placeholder="Select location" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="new-york">New York, NY</SelectItem>
-                    <SelectItem value="los-angeles">Los Angeles, CA</SelectItem>
-                    <SelectItem value="chicago">Chicago, IL</SelectItem>
-                    <SelectItem value="houston">Houston, TX</SelectItem>
-                    <SelectItem value="phoenix">Phoenix, AZ</SelectItem>
-                  </SelectContent>
-                </Select>
+              {/* Location Select (single icon within component) */}
+              <div className="md:col-span-4 relative flex items-center">
+                <div className="w-full">
+                  <LocationSelectorCompact onLocationSelect={(loc) => setLocation(loc)} />
+                </div>
               </div>
 
               {/* Search Button */}

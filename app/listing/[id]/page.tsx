@@ -25,6 +25,7 @@ import {
   Package,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { LocationSelector } from "@/components/location-selector"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -88,7 +89,7 @@ export default function ListingPage({ params }: { params: { id: string } | Promi
     condition: "",
     location: "",
     quantity: 1,
-    status: "in_stock",
+    status: "draft",
   })
 
   useEffect(() => {
@@ -564,11 +565,20 @@ export default function ListingPage({ params }: { params: { id: string } | Promi
                     </div>
                     <div>
                       <Label htmlFor="location">Location</Label>
+                      <div className="mt-2">
+                        <LocationSelector
+                          onLocationSelect={(city) => setEditForm({ ...editForm, location: city })}
+                          showCurrentLocation={true}
+                          className="w-full"
+                          scope="local"
+                        />
+                      </div>
                       <Input
                         id="location"
                         value={editForm.location}
                         onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
-                        className="mt-1"
+                        placeholder="Enter your city name"
+                        className="mt-2"
                       />
                     </div>
                     <div>

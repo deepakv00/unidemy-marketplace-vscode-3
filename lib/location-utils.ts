@@ -21,7 +21,7 @@ export interface UserLocation {
 
 // Common Indian cities for dropdown selection
 export const INDIAN_CITIES = [
-  'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Ahmedabad', 'Chennai', 'Kolkata', 'Pune', 'Jaipur', 'Surat',
+  'Mumbai', 'Delhi', 'Bengaluru', 'Hyderabad', 'Ahmedabad', 'Chennai', 'Kolkata', 'Pune', 'Jaipur', 'Surat',
   'Lucknow', 'Kanpur', 'Nagpur', 'Indore', 'Thane', 'Bhopal', 'Visakhapatnam', 'Pimpri-Chinchwad', 'Patna', 'Vadodara',
   'Ghaziabad', 'Ludhiana', 'Agra', 'Nashik', 'Faridabad', 'Meerut', 'Rajkot', 'Kalyan-Dombivali', 'Vasai-Virar', 'Varanasi',
   'Srinagar', 'Aurangabad', 'Navi Mumbai', 'Solapur', 'Vijayawada', 'Kolhapur', 'Amritsar', 'Noida', 'Ranchi', 'Howrah',
@@ -179,7 +179,7 @@ export function getNearbyCities(city: string): string[] {
   const nearbyMappings: Record<string, string[]> = {
     'mumbai': ['thane', 'navi mumbai', 'kalyan', 'pune'],
     'delhi': ['gurgaon', 'noida', 'faridabad', 'ghaziabad'],
-    'bangalore': ['mysore', 'hosur', 'tumkur'],
+    'bengaluru': ['mysore', 'hosur', 'tumkur'],
     'chennai': ['vellore', 'tirupati', 'pondicherry'],
     'kolkata': ['howrah', 'durgapur', 'asansol'],
     'hyderabad': ['secunderabad', 'warangal', 'nizamabad'],
@@ -190,5 +190,13 @@ export function getNearbyCities(city: string): string[] {
   }
   
   return nearbyMappings[cityLower] || []
+}
+
+// Normalize city naming (e.g., Bangalore -> Bengaluru)
+export function normalizeCityName(city: string): string {
+  const lower = city?.trim().toLowerCase()
+  if (!lower) return city
+  if (lower === 'bangalore') return 'Bengaluru'
+  return city
 }
 

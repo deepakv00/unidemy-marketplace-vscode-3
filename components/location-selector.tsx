@@ -8,20 +8,24 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useLocation } from '@/lib/location-context'
-import { INDIAN_CITIES, INTERNATIONAL_CITIES } from '@/lib/location-utils'
+import { INDIAN_CITIES, INTERNATIONAL_CITIES, normalizeCityName, getCurrentLocation } from '@/lib/location-utils'
 
 interface LocationSelectorProps {
   onLocationSelect?: (location: string) => void
   showCurrentLocation?: boolean
   placeholder?: string
   className?: string
+  onClose?: () => void
+  scope?: 'global' | 'local'
 }
 
 export function LocationSelector({ 
   onLocationSelect, 
   showCurrentLocation = true, 
   placeholder = "Select your location",
-  className = ""
+  className = "",
+  onClose,
+  scope = 'global'
 }: LocationSelectorProps) {
   const { 
     userLocation, 
@@ -45,21 +49,34 @@ export function LocationSelector({
 
   const handleCurrentLocationClick = async () => {
     setShowSuggestions(false)
-    await detectCurrentLocation()
+    if (scope === 'global') {
+      await detectCurrentLocation()
+    } else {
+      const loc = await getCurrentLocation()
+      if (loc?.city) {
+        const normalized = normalizeCityName(loc.city)
+        setSelectedLocation(normalized)
+        setSearchQuery(normalized)
+        onLocationSelect?.(normalized)
+      }
+    }
   }
 
   const handleCitySelect = (city: string) => {
-    setSelectedLocation(city)
-    setSearchQuery(city)
+    const normalized = normalizeCityName(city)
+    setSelectedLocation(normalized)
+    setSearchQuery(normalized)
     setShowSuggestions(false)
     
     const newLocation = {
-      city,
+      city: normalized,
       coordinates: undefined // Manual selection doesn't have coordinates
     }
     
-    setUserLocation(newLocation)
-    onLocationSelect?.(city)
+    if (scope === 'global') {
+      setUserLocation(newLocation)
+    }
+    onLocationSelect?.(normalized)
   }
 
   const handleClearLocation = () => {
@@ -74,19 +91,29 @@ export function LocationSelector({
     setShowSuggestions(true)
   }
 
-  const displayLocation = userLocation?.city || selectedLocation || placeholder
+  const displayLocation = (scope === 'global' ? userLocation?.city : selectedLocation) || selectedLocation || placeholder
 
   return (
     <div className={`relative ${className}`}>
-      <Card className="w-full">
-        <CardHeader className="pb-3">
+      <Card className="w-full relative">
+        <CardHeader className="pb-3 pr-10">
           <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Your Location
           </CardTitle>
+          {onClose && (
+            <button
+              type="button"
+              aria-label="Close location selector"
+              onClick={onClose}
+              className="absolute top-2 right-2 h-8 w-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center shadow"
+            >
+              ×
+            </button>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Current Location Display */}
-          {userLocation?.city && (
+          {/* Current Location Display (only in global scope) */}
+          {scope === 'global' && userLocation?.city && (
             <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
               <div className="flex items-center space-x-2">
                 <MapPin className="h-4 w-4 text-green-600 dark:text-green-400" />
@@ -115,7 +142,7 @@ export function LocationSelector({
           )}
 
           {/* Current Location Button */}
-          {showCurrentLocation && !userLocation && (
+          {showCurrentLocation && (scope === 'global' ? !userLocation : true) && (
             <Button
               variant="outline"
               onClick={handleCurrentLocationClick}
@@ -179,7 +206,7 @@ export function LocationSelector({
           <div className="space-y-2">
             <Label className="text-sm font-medium">Popular Cities:</Label>
             <div className="flex flex-wrap gap-2">
-              {['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata', 'Hyderabad', 'Pune', 'Ahmedabad'].map((city) => (
+              {['Mumbai', 'Delhi', 'Bengaluru', 'Chennai', 'Kolkata', 'Hyderabad', 'Pune', 'Ahmedabad'].map((city) => (
                 <Button
                   key={city}
                   variant="outline"
@@ -217,6 +244,17 @@ export function LocationSelectorCompact({
   const { userLocation, detectCurrentLocation, isLoading, clearLocation } = useLocation()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
+  // Close on Escape key
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsDropdownOpen(false)
+    }
+    if (isDropdownOpen) {
+      window.addEventListener('keydown', onKey)
+    }
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isDropdownOpen])
+
   return (
     <div className={`relative ${className}`}>
       <Button
@@ -233,8 +271,9 @@ export function LocationSelectorCompact({
 
       {isDropdownOpen && (
         <>
-          <div className="absolute right-0 top-full mt-2 w-80 z-50">
+          <div className="absolute right-0 top-full mt-2 w-80 z-[60] max-h-[70vh] overflow-y-auto">
             <LocationSelector 
+              onClose={() => setIsDropdownOpen(false)}
               onLocationSelect={(location) => {
                 onLocationSelect?.(location)
                 setIsDropdownOpen(false)
@@ -242,7 +281,7 @@ export function LocationSelectorCompact({
             />
           </div>
           <div 
-            className="fixed inset-0 z-40" 
+            className="fixed inset-0 z-[55]" 
             onClick={() => setIsDropdownOpen(false)}
           />
         </>

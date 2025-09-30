@@ -26,9 +26,9 @@ export async function getAllProducts(userLocation?: string): Promise<Product[]> 
       .eq("status", "active")
       .order("created_at", { ascending: false })
 
-    // If user location is provided, prioritize products from that location
+    // If user location is provided, filter strictly by that location (city match)
     if (userLocation) {
-      query = query.or(`location.ilike.%${userLocation}%,location.is.null`)
+      query = query.ilike("location", `%${userLocation}%`)
     }
 
     const { data, error } = await query
@@ -42,17 +42,7 @@ export async function getAllProducts(userLocation?: string): Promise<Product[]> 
     console.log("[API] Result is array:", Array.isArray(data))
     console.log("[API] Result length:", data?.length || 0)
 
-    // Sort results to prioritize local products first
-    if (userLocation && data) {
-      data.sort((a, b) => {
-        const aIsLocal = a.location.toLowerCase().includes(userLocation.toLowerCase())
-        const bIsLocal = b.location.toLowerCase().includes(userLocation.toLowerCase())
-        
-        if (aIsLocal && !bIsLocal) return -1
-        if (!aIsLocal && bIsLocal) return 1
-        return 0
-      })
-    }
+    // No extra sort needed when strictly filtering by location
 
     const result = data || []
     console.log("[API] Returning:", result)
@@ -130,23 +120,16 @@ export async function searchProducts(query: string, userLocation?: string): Prom
     .eq("status", "active")
     .order("created_at", { ascending: false })
 
+  // Strict location filter if provided
+  if (userLocation) {
+    searchQuery = searchQuery.ilike("location", `%${userLocation}%`)
+  }
+
   const { data, error } = await searchQuery
 
   if (error) {
     console.error("Error searching products:", error)
     return []
-  }
-
-  // Sort results to prioritize local products first
-  if (userLocation && data) {
-    data.sort((a, b) => {
-      const aIsLocal = a.location.toLowerCase().includes(userLocation.toLowerCase())
-      const bIsLocal = b.location.toLowerCase().includes(userLocation.toLowerCase())
-      
-      if (aIsLocal && !bIsLocal) return -1
-      if (!aIsLocal && bIsLocal) return 1
-      return 0
-    })
   }
 
   return data || []
@@ -360,7 +343,12 @@ export async function getFeaturedProducts(limit = 8, userLocation?: string): Pro
     `)
     .eq("status", "active")
     .order("created_at", { ascending: false })
-    .limit(limit * 2) // Get more results to filter and sort
+    .limit(limit)
+
+  // Strictly filter by location if provided
+  if (userLocation) {
+    query = query.ilike("location", `%${userLocation}%`)
+  }
 
   const { data, error } = await query
 
@@ -369,24 +357,7 @@ export async function getFeaturedProducts(limit = 8, userLocation?: string): Pro
     return []
   }
 
-  if (!data) return []
-
-  // If user location is provided, prioritize local products
-  if (userLocation && data.length > 0) {
-    data.sort((a, b) => {
-      const aIsLocal = a.location.toLowerCase().includes(userLocation.toLowerCase())
-      const bIsLocal = b.location.toLowerCase().includes(userLocation.toLowerCase())
-      
-      if (aIsLocal && !bIsLocal) return -1
-      if (!aIsLocal && bIsLocal) return 1
-      
-      // If both are local or both are not local, sort by creation date
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    })
-  }
-
-  // Return limited results
-  return data.slice(0, limit)
+  return data || []
 }
 
 export async function getDonateGiveawayProducts(): Promise<Product[]> {
